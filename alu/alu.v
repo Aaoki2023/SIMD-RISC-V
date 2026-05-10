@@ -143,15 +143,6 @@ module alu (
                 zero = (res == 0);
             end
 
-            // CMP: begin
-            //     res = sub_res;
-            //     less_than = s_less;
-            //     equal = s_equal;
-            //     greater_than = s_greater;
-            //     sign = res[31];
-            //     zero = (res == 0);
-            // end
-
             PASS_B: begin
                 res = in2;
             end

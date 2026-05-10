@@ -10,7 +10,7 @@ module data_mem (
     output reg [31:0] read_data     
 );
 
-    reg [31:0] mem [0:1023]; 
+    reg [31:0] mem [0:31]; 
     
     wire [9:0] word_addr = addr[11:2];
     wire [1:0] byte_offset = addr[1:0];
@@ -122,7 +122,7 @@ module data_mem (
     // initialize
     initial begin
         integer i;
-        for (i = 0; i < 1024; i = i + 1) begin
+        for (i = 0; i < 32; i = i + 1) begin
             mem[i] = 32'b0;
         end
     end

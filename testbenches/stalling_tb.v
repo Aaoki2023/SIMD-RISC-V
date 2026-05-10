@@ -21,14 +21,18 @@ module main_tb;
     wire [31:0] pc_out;
     wire [31:0] instr;
     wire [31:0] alu_res;
+    wire [31:0] debug_x5;
+    wire led;
 
     // Instantiate cpu
     main cpu (
-        .clk(clk),
+        //.clk(clk),
         .rst(rst),
         .pc_out(pc_out),
         .instr(instr),
-        .alu_res(alu_res)
+        .alu_res(alu_res),
+        .debug_x5(debug_x5),
+        .led(led)
     );
 
     // Clock generation

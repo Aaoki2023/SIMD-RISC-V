@@ -1,4 +1,4 @@
-timestamp: "26100027252"
+timestamp: "04003626596"
 arch: ICE40
 fpga_info {
   fpga_id: "ice40up5k-sg48"
@@ -21,12 +21,11 @@ environment {
 }
 apio_env_params {
   env_name: "default"
-  board_id: "upduino"
+  board_id: "upduino31"
   top_module: "main"
 }
 target {
-  test {
-    testbench_path: "./testbenches/cycle_count_tb.v"
-    default_option: false
+  upload {
+    programmer_cmd: "iceprog -d d:0/3 $SOURCE"
   }
 }

@@ -1,2 +1,2 @@
-set_io clk     21
-set_io rst      2
+set_io rst      28
+set_io led      41

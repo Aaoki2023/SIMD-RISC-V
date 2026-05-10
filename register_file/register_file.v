@@ -7,8 +7,15 @@ module register_file (
     input wire [4:0] w_addr,
     input wire [31:0] w_data,
 
+
+    output wire check,
     output reg [31:0] r_data1,
-    output reg [31:0] r_data2
+    output reg [31:0] r_data2,
+
+    output wire [31:0] debug_x5,
+    output wire [31:0] debug_x6,
+    output wire [31:0] debug_x7,
+    output wire [31:0] debug_x9
 );
 
     reg [31:0] registers [31:0]; // make sure the register file is running fast enough to fit within the clock cycle along with load/stores and alu
@@ -55,6 +62,10 @@ module register_file (
                     (w_enable && w_addr == r_addr2) ? w_data :
                     registers[r_addr2];
         
+    assign debug_x5 = registers[5];
+    assign debug_x6 = registers[6];
+    assign debug_x7 = registers[7];
+    assign debug_x9 = registers[9];
 endmodule
 
 

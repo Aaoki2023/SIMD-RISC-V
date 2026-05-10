@@ -1,11 +1,21 @@
 module main(
-    input wire clk,
-    input wire rst,
+    //input wire clk,
+    input rst,
 
-    output wire [31:0] pc_out,
-    output wire [31:0] instr,
-    output wire [31:0] alu_res
+    // output wire [31:0] pc_out,
+    // output wire [31:0] instr,
+    // output wire [31:0] alu_res,
+    //output wire [31:0] debug_x5,
+    output led
 );
+    wire clk;
+    //wire rst = 1'b0;
+    wire [31:0] instr;
+    wire [31:0] alu_res;
+    wire [31:0] pc_out;
+    wire [31:0] debug_x5;
+
+    oscilator oscilator (.clk(clk));
 
     wire [31:0] pc;
     wire [31:0] pc_next;
@@ -64,6 +74,19 @@ module main(
     wire EX_jump;
 
     assign flush = EX_branch_taken || EX_jump;
+
+    wire x5_correct, x6_correct, x7_correct, x9_correct;
+    wire [31:0] debug_x6, debug_x7, debug_x9;
+    wire test_pass;
+    wire [31:0] debug_mem;
+    
+    assign x5_correct = (debug_x5 == 32'd10);
+    assign x6_correct = (debug_x6 == 32'd10);
+    assign x7_correct = (debug_x7 == 32'd20);
+    assign x9_correct = (debug_x9 == 32'd10);
+    
+    // LED
+    assign led = ~(x5_correct & x6_correct & x7_correct & x9_correct);  // active LOW LED
 
     // IF / ID
     reg [31:0] IF_ID_pc;
@@ -311,7 +334,8 @@ module main(
         .instr(instr),
         .write_enable(1'b0),
         .write_addr(32'b0),
-        .write_data(32'b0)
+        .write_data(32'b0),
+        .debug_mem(debug_mem)
     );
 
     instr_decode DECODE (
@@ -344,7 +368,11 @@ module main(
         .r_data2(data2),
         .w_enable(MEM_WB_reg_write),
         .w_addr(MEM_WB_rd),
-        .w_data(final_write_data)
+        .w_data(final_write_data),
+        .debug_x5(debug_x5),
+        .debug_x6(debug_x6),
+        .debug_x7(debug_x7),
+        .debug_x9(debug_x9)
     );
 
     assign alu_input1_fwd = (forwardA == 2'b10) ? EX_MEM_alu_res :
