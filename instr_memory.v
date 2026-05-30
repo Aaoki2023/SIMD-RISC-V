@@ -23,13 +23,15 @@ module instr_memory (
     end
     
     // default program at initialization
+    // yosys doesn't like that you are writing both instructions and 32'h0000013 to a location in memory
+    // change the .v to .sv to get rid of for loop warning
     initial begin
 
         integer i;
         for (i = 0; i < 1024; i = i + 1)
             mem[i] = 32'h00000013;
 
-        $readmemh("./testbenches/hex_files/program_hw_byte.hex", mem); // streamline your risc-v to hex so that way you know what your hex is doing
+        $readmemh("./testbenches/hex_files/test_cycle_count.hex", mem); // streamline your risc-v to hex so that way you know what your hex is doing
         $display("mem[0] = %h", mem[0]);
     end
 

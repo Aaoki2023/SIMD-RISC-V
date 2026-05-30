@@ -72,4 +72,6 @@ module main_tb;
         $display("ALU result = %d", alu_res);
     end
 
+// show how many cycles it takes for a testbench to run
+
 endmodule

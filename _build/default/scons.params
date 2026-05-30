@@ -1,4 +1,4 @@
-timestamp: "23102852247"
+timestamp: "26100027252"
 arch: ICE40
 fpga_info {
   fpga_id: "ice40up5k-sg48"
@@ -26,7 +26,7 @@ apio_env_params {
 }
 target {
   test {
-    testbench_path: "testbenches/store_load_tb.v"
+    testbench_path: "./testbenches/cycle_count_tb.v"
     default_option: false
   }
 }
