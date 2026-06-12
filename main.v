@@ -26,6 +26,14 @@ module main(
     wire [1:0] mem_size;
     wire mem_unsigned;
 
+    wire vector_enable;
+    wire vector_reg_write;
+    wire vector_alu_src;
+    wire [3:0] vector_alu_control;
+
+    wire [127:0] vector_data1;
+    wire [127:0] vector_data2;
+
     wire branch;              // branch instr flag
     wire jump;                // jump instr flag
     wire jalr;                // JALR flag
@@ -108,6 +116,13 @@ module main(
     reg [1:0] ID_EX_mem_size;
     reg ID_EX_mem_unsigned;
 
+    reg ID_EX_vector_enable;
+    reg ID_EX_vector_reg_write;
+    reg ID_EX_vector_alu_src;
+    reg [3:0] ID_EX_vector_alu_control;
+    reg [127:0] ID_EX_vector_data1;
+    reg [127:0] ID_EX_vector_data2;
+
     // stalling logic
     assign stall = ID_EX_mem_read &&
                ((ID_EX_rd == rs1) || (ID_EX_rd == rs2 && !ID_EX_mem_write)) &&
@@ -144,6 +159,10 @@ module main(
             ID_EX_mem_read <= 0;
             ID_EX_jump <= 0;
             ID_EX_branch <= 0;
+            ID_EX_vector_enable <= 0;
+            ID_EX_vector_reg_write <= 0;
+            ID_EX_vector_alu_src <= 0;
+            ID_EX_vector_alu_control <= 0;
         end else if (stall) begin
             ID_EX_rd <= 0;
             ID_EX_reg_write <= 0;
@@ -154,6 +173,10 @@ module main(
             ID_EX_alu_src <= 0;
             ID_EX_branch <= 0;
             ID_EX_jump <= 0;
+            ID_EX_vector_enable <= 0;
+            ID_EX_vector_reg_write <= 0;
+            ID_EX_vector_alu_src <= 0;
+            ID_EX_vector_alu_control <= 0;
         end else begin
             ID_EX_data1 <= data1;
             ID_EX_data2 <= data2;
@@ -176,6 +199,12 @@ module main(
             ID_EX_rs2 <= rs2;
             ID_EX_mem_size <= mem_size;
             ID_EX_mem_unsigned <= mem_unsigned;
+            ID_EX_vector_enable <= vector_enable;
+            ID_EX_vector_reg_write <= vector_reg_write;
+            ID_EX_vector_alu_src <= vector_alu_src;
+            ID_EX_vector_alu_control <= vector_alu_control;
+            ID_EX_vector_data1 <= vector_data1;
+            ID_EX_vector_data2 <= vector_data2;
         end
     end
 
@@ -191,6 +220,10 @@ module main(
     reg EX_MEM_jump;
     reg [1:0] EX_MEM_mem_size;
     reg EX_MEM_mem_unsigned;
+
+    reg [127:0] EX_MEM_vector_alu_res;
+    reg EX_MEM_vector_reg_write;
+    reg [4:0] EX_MEM_vector_rd;
 
     // forwarding for mem to mem hazard
     wire [31:0] store_data2_fwd;
@@ -212,6 +245,9 @@ module main(
             EX_MEM_jump <= 0;
             EX_MEM_mem_size <= 0;
             EX_MEM_mem_unsigned <= 0;
+            EX_MEM_vector_alu_res <= 0;
+            EX_MEM_vector_rd <= 0;
+            EX_MEM_vector_reg_write <= 0;
         end else begin
             EX_MEM_alu_res <= alu_res;
             EX_MEM_data2 <= store_data2_fwd;
@@ -224,6 +260,9 @@ module main(
             EX_MEM_jump <= ID_EX_jump;
             EX_MEM_mem_size <= ID_EX_mem_size;
             EX_MEM_mem_unsigned <= ID_EX_mem_unsigned;
+            EX_MEM_vector_alu_res <= active_vector_alu_res;
+            EX_MEM_vector_rd <= ID_EX_rd;
+            EX_MEM_vector_reg_write <= ID_EX_vector_reg_write;
         end
     end
 
@@ -236,6 +275,10 @@ module main(
     reg [31:0] MEM_WB_pc_plus_4;
     reg MEM_WB_jump;
 
+    reg [127:0] MEM_WB_vector_alu_res;
+    reg [4:0] MEM_WB_vector_rd;
+    reg MEM_WB_vector_reg_write;
+
     always @(posedge clk or posedge rst) begin
         if (rst) begin
             MEM_WB_mem_data <= 0;
@@ -245,6 +288,9 @@ module main(
             MEM_WB_mem_to_reg <= 0;
             MEM_WB_pc_plus_4 <= 0;
             MEM_WB_jump <= 0;
+            MEM_WB_vector_alu_res <= 0;
+            MEM_WB_vector_rd <= 0;
+            MEM_WB_vector_reg_write <= 0;
         end else begin
             MEM_WB_mem_data <= mem_data;
             MEM_WB_alu_res <= EX_MEM_alu_res;
@@ -253,6 +299,9 @@ module main(
             MEM_WB_mem_to_reg <= EX_MEM_mem_to_reg;
             MEM_WB_pc_plus_4 <= EX_MEM_pc_plus_4;
             MEM_WB_jump <= EX_MEM_jump;
+            MEM_WB_vector_alu_res <= EX_MEM_vector_alu_res;
+            MEM_WB_vector_rd <= EX_MEM_vector_rd;
+            MEM_WB_vector_reg_write <= EX_MEM_vector_reg_write;
         end
     end
     
@@ -323,6 +372,10 @@ module main(
         .reg_write(reg_write),
         .alu_src(alu_src),
         .alu_control(alu_control),
+        .vector_enable(vector_enable),
+        .vector_reg_write(vector_reg_write),
+        .vector_alu_src(vector_alu_src),
+        .vector_alu_control(vector_alu_control),
         .mem_read(mem_read),
         .mem_write(mem_write),
         .mem_to_reg(mem_to_reg),
@@ -333,6 +386,18 @@ module main(
         .jalr(jalr),
         .auipc(auipc),
         .branch_type(branch_type)
+    );
+
+    vector_register_file VREGFILE (
+        .clk(clk),
+        .reset(rst),
+        .read_addr1(rs1),
+        .read_data1(vector_data1),
+        .read_addr2(rs2),
+        .read_data2(vector_data2),
+        .write_addr(MEM_WB_vector_rd),
+        .write_data(MEM_WB_vector_alu_res),
+        .write_enable(MEM_WB_vector_reg_write)
     );
 
     register_file REGFILE (
@@ -358,6 +423,9 @@ module main(
                              ID_EX_data2;
     assign alu_input2 = ID_EX_alu_src ? ID_EX_imm : alu_input2_fwd;  
 
+    wire [127:0] vector_alu_res;
+    wire [127:0] active_vector_alu_res = ID_EX_vector_enable ? vector_alu_res : 128'b0;
+
     alu A (
         .in1(alu_input1),
         .in2(alu_input2),
@@ -370,6 +438,21 @@ module main(
         .less_than(less_than_flag),
         .greater_than(greater_than_flag),
         .equal(equal_flag)
+    );
+
+    vector_alu V_A (
+        .in1(ID_EX_vector_data1),
+        .in2(ID_EX_vector_data2),
+        .control(ID_EX_vector_alu_control),
+        .result(vector_alu_res),
+        .overflow(),
+        .carry(),
+        .sign(),
+        .zero(),
+        .less_than(),
+        .equal(),
+        .greater_than(),
+        .all_zero()
     );
 
     data_mem DMEM (

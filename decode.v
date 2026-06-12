@@ -18,6 +18,11 @@ module instr_decode(
     output reg [1:0] mem_size,     // 00=byte, 01=half, 10=word
     output reg mem_unsigned,        // 1=unsigned load, 0=signed load
 
+    output reg vector_enable,       // 1 = vector ALU instruction
+    output reg vector_reg_write,    // 1 = write vector register file
+    output reg vector_alu_src,      // 1 = vector immediate operand (future use)
+    output reg [3:0] vector_alu_control,
+
     output reg branch,
     output reg jump,
     output reg jalr,
@@ -66,6 +71,7 @@ module instr_decode(
     localparam R_TYPE = 7'b0110011;
     localparam I_TYPE = 7'b0010011;
     localparam OP_LUI = 7'b0110111; // load upper imm so that way you can have a 32 bit immediate
+    localparam OP_VECTOR = 7'b1010111; // custom vector ALU opcode
 
     localparam BRANCH = 7'b1100011;
     localparam JAL    = 7'b1101111;  
@@ -83,6 +89,10 @@ module instr_decode(
         reg_write = 0;
         alu_src = 0;
         alu_control = ADD;
+        vector_enable = 0;
+        vector_reg_write = 0;
+        vector_alu_src = 0;
+        vector_alu_control = ADD;
         imm = 32'b0;
         mem_read = 0;
         mem_write = 0;
@@ -227,6 +237,39 @@ module instr_decode(
                 alu_src = 1;
                 alu_control = PASS_B;
                 imm = {instr[31:12], 12'b0};
+            end
+
+            OP_VECTOR: begin
+                vector_enable = 1;
+                vector_reg_write = 1;
+                vector_alu_src = 0;
+
+                case (funct3)
+                    3'b000: begin
+                        if (funct7 == 7'b0100000)
+                            vector_alu_control = SUB;
+                        else
+                            vector_alu_control = ADD;
+                    end
+                    3'b001: vector_alu_control = SHL;
+                    3'b010: vector_alu_control = MUL;
+                    3'b011: begin
+                        if (funct7 == 7'b0100000)
+                            vector_alu_control = PASS_B;
+                        else
+                            vector_alu_control = CMP;
+                    end
+                    3'b100: vector_alu_control = XOR;
+                    3'b101: begin
+                        if (funct7 == 7'b0100000)
+                            vector_alu_control = SRA;
+                        else
+                            vector_alu_control = SHR;
+                    end
+                    3'b110: vector_alu_control = OR;
+                    3'b111: vector_alu_control = AND;
+                    default: vector_alu_control = ADD;
+                endcase
             end
 
             BRANCH: begin
